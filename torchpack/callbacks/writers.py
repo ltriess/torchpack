@@ -65,10 +65,13 @@ class TFEventWriter(SummaryWriter):
     """
     Write summaries to TensorFlow event file.
     """
-    def __init__(self, *, save_dir: Optional[str] = None) -> None:
+    def __init__(self, *, save_dir: Optional[str] = None, split: str = None) -> None:
         if save_dir is None:
             save_dir = os.path.join(get_run_dir(), 'tensorboard')
+        if split is not None:
+            save_dir = os.path.join(save_dir, split)
         self.save_dir = fs.normpath(save_dir)
+        self.split = split
 
     def _set_trainer(self, trainer: Trainer) -> None:
         from torch.utils.tensorboard import SummaryWriter

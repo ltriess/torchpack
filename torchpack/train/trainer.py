@@ -23,6 +23,7 @@ class Trainer:
                             *,
                             num_epochs: int = 9999999,
                             max_eval_interval: int = None,
+                            splits: List[str] = None,
                             callbacks: Optional[List[Callback]] = None
                             ) -> None:
         if callbacks is None:
@@ -30,14 +31,19 @@ class Trainer:
         callbacks += [
             MetaInfoSaver(),
             ConsoleWriter(),
-            TFEventWriter(),
             JSONLWriter(),
             ProgressBar(),
             EstimatedTimeLeft()
         ]
+        if splits is None:
+            callbacks.append(TFEventWriter())
+        else:
+            callbacks += [TFEventWriter(split=s) for s in splits]
+
         self.train(dataflow=dataflow,
                    num_epochs=num_epochs,
                    max_eval_interval=max_eval_interval,
+                   splits=splits,
                    callbacks=callbacks)
 
     def train(self,
@@ -45,6 +51,7 @@ class Trainer:
               *,
               num_epochs: int = 9999999,
               max_eval_interval: int = None,
+              splits: List[str] = None,
               callbacks: Optional[List[Callback]] = None) -> None:
         self.dataflow = dataflow
         self.steps_per_epoch = len(self.dataflow)
@@ -53,11 +60,15 @@ class Trainer:
         if callbacks is None:
             callbacks = []
         self.callbacks = Callbacks(callbacks)
-        self.summary = Summary()
+        if splits is None:
+            self.summary = {"0": Summary()}
+        else:
+            self.summary = {s: Summary(split=s) for s in splits}
 
         try:
             self.callbacks.set_trainer(self)
-            self.summary.set_trainer(self)
+            for s in self.summary.values():
+                s.set_trainer(self)
 
             self.epoch_num = 0
             self.global_step = 0

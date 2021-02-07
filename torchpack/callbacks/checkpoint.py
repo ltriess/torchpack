@@ -68,12 +68,16 @@ class BestSaver(Callback):
 
     def __init__(self,
                  scalar: str,
+                 split: str = None,
                  *,
                  name: Optional[str] = None,
                  save_dir: Optional[str] = None) -> None:
         self.scalar = scalar
+        self.split = split if split is not None else "0"
         if name is None:
             name = self.extreme + '-' + scalar.replace('/', '-')
+            if split is not None:
+                name += "-" + split
         self.name = name
         if save_dir is None:
             save_dir = os.path.join(get_run_dir(), 'checkpoints')
@@ -86,11 +90,11 @@ class BestSaver(Callback):
         self._trigger()
 
     def _trigger(self):
-        if self.scalar not in self.trainer.summary:
+        if self.scalar not in self.trainer.summary[self.split]:
             logger.warning(
                 f'`{self.scalar}` has not been added to `trainer.summary`.')
             return
-        step, value = self.trainer.summary[self.scalar][-1]
+        step, value = self.trainer.summary[self.split][self.scalar][-1]
 
         if self.step is not None and step <= self.step:
             logger.warning(
@@ -111,7 +115,7 @@ class BestSaver(Callback):
                 logger.info(f'Checkpoint saved: "{save_path}" ({value:.5g}).')
 
         if self.best is not None:
-            self.trainer.summary.add_scalar(self.scalar + '/' + self.extreme,
+            self.trainer.summary[self.split].add_scalar(self.scalar + '/' + self.extreme,
                                             self.best[1])
 
     def _state_dict(self) -> Dict[str, Any]:

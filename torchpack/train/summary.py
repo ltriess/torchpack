@@ -11,8 +11,9 @@ __all__ = ['Summary']
 
 
 class Summary:
-    def __init__(self) -> None:
+    def __init__(self, split: str = None) -> None:
         self.history = defaultdict(deque)
+        self.split = split
 
     def set_trainer(self, trainer: Trainer) -> None:
         self.trainer = trainer
@@ -22,7 +23,11 @@ class Summary:
         self.writers = []
         for callback in trainer.callbacks:
             if isinstance(callback, SummaryWriter):
-                self.writers.append(callback)
+                if hasattr(callback, "split"):
+                    if callback.split == self.split:
+                        self.writers.append(callback)
+                else:
+                    self.writers.append(callback)
 
     def add_scalar(self,
                    name: str,
