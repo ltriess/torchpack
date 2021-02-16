@@ -31,7 +31,7 @@ class Trainer:
         dataflow: DataLoader,
         *,
         num_epochs: int = 9999999,
-        max_eval_interval: int = None,
+        eval_interval: int = None,
         splits: List[str] = None,
         callbacks: Optional[List[Callback]] = None
     ) -> None:
@@ -52,7 +52,7 @@ class Trainer:
         self.train(
             dataflow=dataflow,
             num_epochs=num_epochs,
-            max_eval_interval=max_eval_interval,
+            eval_interval=eval_interval,
             splits=splits,
             callbacks=callbacks,
         )
@@ -62,7 +62,7 @@ class Trainer:
         dataflow: DataLoader,
         *,
         num_epochs: int = 9999999,
-        max_eval_interval: int = None,
+        eval_interval: int = None,
         splits: List[str] = None,
         callbacks: Optional[List[Callback]] = None
     ) -> None:
@@ -85,7 +85,6 @@ class Trainer:
 
             self.epoch_num = 0
             self.global_step = 0
-            eval_counter = 0
 
             train_time = time.perf_counter()
             self.before_train()
@@ -117,12 +116,10 @@ class Trainer:
                     )
                 )
 
-                if max_eval_interval is not None:
-                    if self.global_step >= eval_counter * max_eval_interval:
-                        eval_counter += 1
+                if eval_interval is not None:
+                    if self.epoch_num % eval_interval == 0:
                         self.trigger_epoch()
                 else:
-                    eval_counter += 1
                     self.trigger_epoch()
                 logger.info(
                     "Epoch finished in {}.".format(
