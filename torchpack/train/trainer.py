@@ -3,29 +3,38 @@ from typing import Any, Dict, List, Optional
 
 from torch.utils.data import DataLoader, DistributedSampler
 
-from torchpack.callbacks import (Callback, Callbacks, ConsoleWriter,
-                                 EstimatedTimeLeft, JSONLWriter, MetaInfoSaver,
-                                 ProgressBar, TFEventWriter)
+from torchpack.callbacks import (
+    Callback,
+    Callbacks,
+    ConsoleWriter,
+    EstimatedTimeLeft,
+    JSONLWriter,
+    MetaInfoSaver,
+    ProgressBar,
+    TFEventWriter,
+)
 from torchpack.train.exception import StopTraining
 from torchpack.train.summary import Summary
 from torchpack.utils import humanize
 from torchpack.utils.logging import logger
 
-__all__ = ['Trainer']
+__all__ = ["Trainer"]
 
 
 class Trainer:
     """
     Base class for a trainer.
     """
-    def train_with_defaults(self,
-                            dataflow: DataLoader,
-                            *,
-                            num_epochs: int = 9999999,
-                            max_eval_interval: int = None,
-                            splits: List[str] = None,
-                            callbacks: Optional[List[Callback]] = None
-                            ) -> None:
+
+    def train_with_defaults(
+        self,
+        dataflow: DataLoader,
+        *,
+        num_epochs: int = 9999999,
+        max_eval_interval: int = None,
+        splits: List[str] = None,
+        callbacks: Optional[List[Callback]] = None
+    ) -> None:
         if callbacks is None:
             callbacks = []
         callbacks += [
@@ -33,26 +42,30 @@ class Trainer:
             ConsoleWriter(),
             JSONLWriter(),
             ProgressBar(),
-            EstimatedTimeLeft()
+            EstimatedTimeLeft(),
         ]
         if splits is None:
             callbacks.append(TFEventWriter())
         else:
             callbacks += [TFEventWriter(split=s) for s in splits]
 
-        self.train(dataflow=dataflow,
-                   num_epochs=num_epochs,
-                   max_eval_interval=max_eval_interval,
-                   splits=splits,
-                   callbacks=callbacks)
+        self.train(
+            dataflow=dataflow,
+            num_epochs=num_epochs,
+            max_eval_interval=max_eval_interval,
+            splits=splits,
+            callbacks=callbacks,
+        )
 
-    def train(self,
-              dataflow: DataLoader,
-              *,
-              num_epochs: int = 9999999,
-              max_eval_interval: int = None,
-              splits: List[str] = None,
-              callbacks: Optional[List[Callback]] = None) -> None:
+    def train(
+        self,
+        dataflow: DataLoader,
+        *,
+        num_epochs: int = 9999999,
+        max_eval_interval: int = None,
+        splits: List[str] = None,
+        callbacks: Optional[List[Callback]] = None
+    ) -> None:
         self.dataflow = dataflow
         self.steps_per_epoch = len(self.dataflow)
         self.num_epochs = num_epochs
@@ -81,8 +94,9 @@ class Trainer:
                 self.epoch_num += 1
                 self.local_step = 0
 
-                logger.info('Epoch {}/{} started.'.format(
-                    self.epoch_num, self.num_epochs))
+                logger.info(
+                    "Epoch {}/{} started.".format(self.epoch_num, self.num_epochs)
+                )
                 epoch_time = time.perf_counter()
                 self.before_epoch()
 
@@ -97,8 +111,11 @@ class Trainer:
                     self.trigger_step()
 
                 self.after_epoch()
-                logger.info('Training finished in {}.'.format(
-                    humanize.naturaldelta(time.perf_counter() - epoch_time)))
+                logger.info(
+                    "Training finished in {}.".format(
+                        humanize.naturaldelta(time.perf_counter() - epoch_time)
+                    )
+                )
 
                 if max_eval_interval is not None:
                     if self.global_step >= eval_counter * max_eval_interval:
@@ -107,14 +124,20 @@ class Trainer:
                 else:
                     eval_counter += 1
                     self.trigger_epoch()
-                logger.info('Epoch finished in {}.'.format(
-                    humanize.naturaldelta(time.perf_counter() - epoch_time)))
+                logger.info(
+                    "Epoch finished in {}.".format(
+                        humanize.naturaldelta(time.perf_counter() - epoch_time)
+                    )
+                )
 
-            logger.success('{} epochs of training finished in {}.'.format(
-                self.num_epochs,
-                humanize.naturaldelta(time.perf_counter() - train_time)))
+            logger.success(
+                "{} epochs of training finished in {}.".format(
+                    self.num_epochs,
+                    humanize.naturaldelta(time.perf_counter() - train_time),
+                )
+            )
         except StopTraining as e:
-            logger.info('Training was stopped by {}.'.format(str(e)))
+            logger.info("Training was stopped by {}.".format(str(e)))
         finally:
             self.after_train()
 
@@ -126,8 +149,9 @@ class Trainer:
         pass
 
     def before_epoch(self) -> None:
-        if isinstance(self.dataflow, DataLoader) and \
-                isinstance(self.dataflow.sampler, DistributedSampler):
+        if isinstance(self.dataflow, DataLoader) and isinstance(
+            self.dataflow.sampler, DistributedSampler
+        ):
             self.dataflow.sampler.set_epoch(self.epoch_num)
         self._before_epoch()
         self.callbacks.before_epoch()
@@ -189,20 +213,20 @@ class Trainer:
 
     def state_dict(self) -> Dict[str, Any]:
         state_dict = self._state_dict()
-        state_dict['callbacks'] = self.callbacks.state_dict()
-        state_dict['epoch_num'] = self.epoch_num
-        state_dict['local_step'] = self.local_step
-        state_dict['global_step'] = self.global_step
+        state_dict["callbacks"] = self.callbacks.state_dict()
+        state_dict["epoch_num"] = self.epoch_num
+        state_dict["local_step"] = self.local_step
+        state_dict["global_step"] = self.global_step
         return state_dict
 
     def _state_dict(self) -> Dict[str, Any]:
         return dict()
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
-        self.epoch_num = state_dict.pop('epoch_num')
-        self.local_step = state_dict.pop('local_step')
-        self.global_step = state_dict.pop('global_step')
-        self.callbacks.load_state_dict(state_dict.pop('callbacks'))
+        self.epoch_num = state_dict.pop("epoch_num")
+        self.local_step = state_dict.pop("local_step")
+        self.global_step = state_dict.pop("global_step")
+        self.callbacks.load_state_dict(state_dict.pop("callbacks"))
         self._load_state_dict(state_dict)
 
     def _load_state_dict(self, state_dict: Dict[str, Any]) -> None:
