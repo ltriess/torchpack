@@ -105,7 +105,9 @@ class BestSaver(Callback):
             or (self.extreme == "max" and value > self.best[1])
         ):
             self.best = (step, value)
-            save_path = os.path.join(self.save_dir, self.name + ".pt")
+            save_path = os.path.join(
+                self.save_dir, self.name + f"_step-{self.trainer.global_step}.pt"
+            )
             try:
                 io.save(save_path, self.trainer.state_dict())
             except OSError:
